@@ -1,0 +1,3 @@
+[submodule "magpie-python"]
+	path = magpie-python
+	url = https://github.com/Nemus-Project/magpie-python
