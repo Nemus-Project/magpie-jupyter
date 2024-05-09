@@ -1,3 +1,3 @@
-[submodule "magpie-python"]
-	path = magpie-python
-	url = https://github.com/Nemus-Project/magpie-python
+[submodule "magpie"]
+	path = magpie
+	url = https://github.com/Nemus-Project/magpie-python.git
