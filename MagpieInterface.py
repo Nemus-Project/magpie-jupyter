@@ -3,7 +3,6 @@ from scipy.sparse import eye
 import matplotlib
 from matplotlib import pyplot as plt
 import pandas as pd
-from pythreejs import *
 
 from IPython.display import display, clear_output
 from ipywidgets import *
