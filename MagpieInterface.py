@@ -71,6 +71,7 @@ class MagpieInterface():
 
         if self.auto_generate:
             self.generate_modes()
+            self.__set_label_string__()
 
     def set_material(self, E, rho):
         self.E = E  # -- Young's mod [Pa]
@@ -84,6 +85,7 @@ class MagpieInterface():
 
         if self.auto_generate:
             self.generate_modes()
+        self.__set_label_string__()
 
     def set_dimensions(self, Lx, Ly, Lz):
         self.ldim = [Lx, Ly, Lz]
@@ -273,13 +275,14 @@ class MagpieInterface():
         interactive_output(self.set_BCs, bc_sliders)
         interactive_output(self.set_resolution, {'res': resolution_slider})
         interactive_output(self.set_material_labels, {'m':material_dropdown})
-
+          
         self.material_coefs[0].value = self.E*1e-9
         self.material_coefs[1].value = self.rho*1e-3
         self.material_coefs[2].value = self.nu
         
         self.interface = VBox(boxes)
 
+    
     def show(self):
         display(self.interface)
 
@@ -291,6 +294,7 @@ class MagpieInterface():
         self.material_coefs[2].value = self.nu
 
         self.set_material(E * 1e9, rho * 1e3)
+        self.__set_label_string__()
 
     def __make_bcy_slider_row__(self, bc_slide):
         padding = Button(description=' ',
@@ -301,5 +305,3 @@ class MagpieInterface():
         padding.style.button_color = 'white'
 
         return [padding, bc_slide, padding]
-
-
