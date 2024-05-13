@@ -10,3 +10,4 @@ application.macosx
 out
 .ipynb_checkpoints/*
 __pycache__/*
+.idea/*
