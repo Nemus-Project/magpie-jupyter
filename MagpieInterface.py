@@ -3,14 +3,43 @@ from scipy.sparse import eye
 import matplotlib
 from matplotlib import pyplot as plt
 import pandas as pd
+import base64
+import hashlib
+from typing import Callable
+
 
 from IPython.display import display, clear_output
 from ipywidgets import *
 from traitlets import link, dlink
+import ipywidgets
+from IPython.display import HTML, display
+import time
 
 from magpie.magpie.magpie import magpie
 
 materials = pd.read_csv('magpie/magpie/data/material_properties.csv')
+
+
+class DownloadButton(Button):
+    """Download button with dynamic content
+
+    The content is generated using a callback when the button is clicked.
+    """
+
+    def __init__(self, filename: Callable[[], str], contents: Callable[[], str], **kwargs):
+        super(DownloadButton, self).__init__(**kwargs)
+        self.filename = filename
+        self.contents = contents
+        self.on_click(self.__on_click)
+
+    def __on_click(self, b):
+        contents: bytes = self.contents().encode('utf-8')
+        b64 = base64.b64encode(contents)
+        payload = b64.decode()
+        digest = hashlib.md5(contents).hexdigest()  # bypass browser cache
+        id = f'dl_{digest}'
+        display(HTML(f"""<html><body><a id="{id}" download="{self.filename()}" href="data:text/csv;base64,{payload}" download></a><script>(function download() {{document.getElementById('{id}').click();}})()</script></body></html>
+"""))
 
 
 class MagpieInterface:
@@ -87,17 +116,20 @@ class MagpieInterface:
             padding,
         ]
 
+
+
+
         rows = [
             self.__make_bcy_slider_row__(bc_sliders['KLy']),
             self.__make_bcy_slider_row__(bc_sliders['RLy']),
             centre_plot_row,
             self.__make_bcy_slider_row__(bc_sliders['R0y']),
-            self.__make_bcy_slider_row__(bc_sliders['K0y'])
+            self.__make_bcy_slider_row__(bc_sliders['K0y']),
         ]
 
         box_layout = Layout(display='flex',
                             flex_flow='row',
-                            align_items='stretch',
+                            align_items='center',
                             width='100%',
                             margin='0 0')
 
@@ -108,7 +140,7 @@ class MagpieInterface:
             justify_content='flex-start',
             align_items='center',
             align_content='center',
-
+            height='auto',
         )
 
         dimension_sliders = {
@@ -163,11 +195,8 @@ class MagpieInterface:
             [Label(value='Accuracy:', layout=Layout(flex='0 1 auto', width='auto')), resolution_slider],
         ]
 
-        boxes = [
-            Box(children=item, layout=form_row_layout) for item in items
-        ]
-
-        form = VBox(boxes, layout=Layout(border='solid'))
+        form = VBox([Box(children=item, layout=form_row_layout) for item in items],
+                    layout=Layout(border='solid'))
         boxes = [form]
         boxes += [Box(children=row, layout=box_layout) for row in rows]
 
@@ -186,6 +215,10 @@ class MagpieInterface:
         ],
             layout=cent_layout)
         ]
+
+        self.download = DownloadButton(filename=lambda: f'{self.get_current_mode_freq_hz():.2f}_Hz_Shape.csv',
+                       contents=lambda: pd.DataFrame(self.get_current_mode_shape()).to_csv(header=True),
+                       description='Download Shape')
 
         interactive_output(self.set_dimensions, dimension_sliders)
         interactive_output(self.set_BCs, bc_sliders)
@@ -276,11 +309,11 @@ class MagpieInterface:
         """
         """
         m = self.m
-
+        ratio = self.ldim[1]/self.ldim[0]
         with self.chladni_plot:
             clear_output(wait=True)
 
-            fig = plt.figure(figsize=(4, 4))
+            fig = plt.figure(figsize=(4, 4*ratio))
             ax = fig.add_subplot(111)
 
             Z = abs(self.mode_shapes[m])
@@ -291,6 +324,20 @@ class MagpieInterface:
 
             plt.plot()
             plt.show()
+
+    def get_current_mode_freq_hz(self):
+        """
+        return the current displayed modal frequency in Hz
+        """
+        return self.Om[self.m] / (2 * np.pi)
+
+    def get_current_mode_shape(self):
+        """
+        Return the current modal shape as a dictionary of x / y coordinates and z values
+        """
+        x, y = np.mgrid[0:self.N['x'], 0:self.N['y']]
+        return {'x': x.flatten().astype('int64'), 'y': y.flatten().astype('int64'), 'z': np.real(self.Q[:, self.m])}
+
 
     def show(self):
         display(self.interface)
