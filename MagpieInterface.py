@@ -75,7 +75,6 @@ class MagpieInterface():
     def set_material(self, E, rho):
         self.E = E  # -- Young's mod [Pa]
         self.rho = rho  # -- density [kg/m^3]
-        self.nu = 0.1  # -- poisson's ratio
         self.generate_modes()
 
     def set_resolution(self, res):
@@ -93,7 +92,8 @@ class MagpieInterface():
             self.generate_modes()
 
     def __set_label_string__(self):
-        self.mode_label.value = f"Mode #{self.m + 1}: {self.Om[self.m]:.2f} Hz"
+        hz = self.Om[self.m] / (2.0*np.pi)
+        self.mode_label.value = f"Mode #{self.m + 1}: {hz:.2f} Hz"
 
     def generate_modes(self):
 
@@ -212,7 +212,7 @@ class MagpieInterface():
         padding.style.button_color = 'white'
 
         material_dropdown = Dropdown(options=[(y, x) for x, y in enumerate(materials['material'])],
-                                     value=None,
+                                     value=14,
                                      layout=Layout(flex='1 1 10rem'))
         edit_material_check = Checkbox(
             value=False,
@@ -225,7 +225,7 @@ class MagpieInterface():
         self.material_coefs = [
             BoundedFloatText(layout=Layout(flex='1 1 5rem', width='5em'), min=0.0, max=500, description='',
                              disabled=True),
-            BoundedFloatText(layout=Layout(flex='1 1 5rem', width='5em'), min=0.2, max=30.0, description='',
+            BoundedFloatText(layout=Layout(flex='1 1 5rem', width='5em'), min=0.2, max=20000.0, description='',
                              disabled=True, ),
             BoundedFloatText(layout=Layout(flex='1 1 5rem', width='5em'), value=0.3, min=0.0, max=0.5, description='',
                              disabled=True, )
@@ -241,7 +241,7 @@ class MagpieInterface():
             [Label(value='Dimensions:', layout=Layout(flex='1 1 auto')), *dimension_sliders.values(), padding],
             [Label(value='Material:', layout=Layout(flex='0 1 auto')), material_dropdown, edit_material_check, padding],
             [Label(value='Young\'s [GPa]:'), self.material_coefs[0], 
-             Label(value='Density [kg]:'), self.material_coefs[1],
+             Label(value='Density [$\\frac{kg}{m^{3}}$]:'), self.material_coefs[1],
              Label(value="Poisson's:"), self.material_coefs[2], padding],
             [Label(value='Accuracy:', layout=Layout(flex='0 1 auto', width='auto')), resolution_slider],
         ]
@@ -276,7 +276,7 @@ class MagpieInterface():
         interactive_output(self.set_material_labels, {'m':material_dropdown})
           
         self.material_coefs[0].value = self.E*1e-9
-        self.material_coefs[1].value = self.rho*1e-3
+        self.material_coefs[1].value = self.rho
         self.material_coefs[2].value = self.nu
         
         self.interface = VBox(boxes)
@@ -292,7 +292,7 @@ class MagpieInterface():
         self.material_coefs[1].value = rho
         self.material_coefs[2].value = self.nu
 
-        self.set_material(E * 1e9, rho * 1e3)
+        self.set_material(E * 1e9, rho*1e3)
         self.__set_label_string__()
 
     def __make_bcy_slider_row__(self, bc_slide):
