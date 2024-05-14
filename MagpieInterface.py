@@ -116,9 +116,6 @@ class MagpieInterface:
             padding,
         ]
 
-
-
-
         rows = [
             self.__make_bcy_slider_row__(bc_sliders['KLy']),
             self.__make_bcy_slider_row__(bc_sliders['RLy']),
@@ -287,7 +284,7 @@ class MagpieInterface:
         E, rho = [materials.loc[m]['youngs'], materials.loc[m]['densities']]
 
         self.material_coefs[0].value = E
-        self.material_coefs[1].value = rho
+        self.material_coefs[1].value = rho * 1e3
         self.material_coefs[2].value = self.nu
 
         self.set_material(E * 1e9, rho * 1e3)
