@@ -1,4 +1,4 @@
-# m<img src="./img/magpie.png" style="height:1ch;"/>gpie 
+# m<img src="./img/magpie-invert.png" style="height:1ch;"/>gpie 
 
 
 ## About
