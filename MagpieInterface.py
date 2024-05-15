@@ -71,9 +71,10 @@ class MagpieInterface:
         self.auto_generate = True
 
         self.chladni_plot = Output()
+        self.mode_label = Label()
+
         self.generate_modes()
 
-        self.mode_label = Label()
         self.__set_label_string__()
         self.__make_interface__()
 
@@ -170,11 +171,11 @@ class MagpieInterface:
 
         self.material_coefs = [
             BoundedFloatText(layout=Layout(flex='1 1 5rem', width='5em'), min=0.0, max=500, description='',
-                             disabled=True),
+                             disabled=False),
             BoundedFloatText(layout=Layout(flex='1 1 5rem', width='5em'), min=0.2, max=20000.0, description='',
-                             disabled=True),
+                             disabled=False),
             BoundedFloatText(layout=Layout(flex='1 1 5rem', width='5em'), value=0.3, min=0.0, max=0.5, description='',
-                             disabled=True)
+                             disabled=False)
         ]
 
         resolution_slider = FloatSlider(value=0.01, min=0.000, max=1.0,
@@ -185,7 +186,7 @@ class MagpieInterface:
 
         items = [
             [Label(value='Dimensions:', layout=Layout(flex='1 1 auto')), *dimension_sliders.values(), padding],
-            [Label(value='Material:', layout=Layout(flex='0 1 auto')), material_dropdown, edit_material_check, padding],
+            [Label(value='Material:', layout=Layout(flex='0 1 auto')), material_dropdown, padding],
             [Label(value='Young\'s [GPa]:'), self.material_coefs[0],
              Label(value='Density $\\left[\\frac{kg}{m^{3}}\\right]$:'), self.material_coefs[1],
              Label(value="Poisson's:"), self.material_coefs[2], padding],
@@ -214,13 +215,16 @@ class MagpieInterface:
         ]
 
         self.download = DownloadButton(filename=lambda: f'{self.get_current_mode_freq_hz():.2f}_Hz_Shape.csv',
-                       contents=lambda: pd.DataFrame(self.get_current_mode_shape()).to_csv(header=True),
-                       description='Download Shape')
+                                       contents=lambda: pd.DataFrame(self.get_current_mode_shape()).to_csv(header=True),
+                                       description='Download Shape')
 
         interactive_output(self.set_dimensions, dimension_sliders)
         interactive_output(self.set_BCs, bc_sliders)
         interactive_output(self.set_resolution, {'res': resolution_slider})
         interactive_output(self.set_material_labels, {'m': material_dropdown})
+        interactive_output(self.set_youngs_gpa, {'E': self.material_coefs[0]})
+        interactive_output(self.set_density, {'rho': self.material_coefs[1]})
+        interactive_output(self.set_poisson, {'nu': self.material_coefs[2]})
 
         self.interface = VBox(boxes)
 
@@ -254,7 +258,6 @@ class MagpieInterface:
                 self.plot_mode_shapes()
 
     def set_BCs(self, K0y, Kx0, KLy, KxL, R0y, Rx0, RLy, RxL):
-        print('hello')
         self.BCs = np.array([[Kx0, Rx0], [K0y, R0y], [KxL, RxL], [KLy, RLy]], dtype=np.float64)
 
         if self.auto_generate:
@@ -270,6 +273,23 @@ class MagpieInterface:
     def set_material(self, E, rho):
         self.E = E  # -- Young's mod [Pa]
         self.rho = rho  # -- density [kg/m^3]
+        self.generate_modes()
+
+    def set_youngs(self, E):
+        self.E = E  # -- Young's mod [Pa]
+        self.generate_modes()
+
+    def set_youngs_gpa(self, E):
+        self.E = E * 1e9  # -- Young's mod [Pa]
+        self.generate_modes()
+
+    def set_density(self, rho):
+        self.rho = rho  # -- density [kg/m^3]
+        self.generate_modes()
+
+    def set_poisson(self, nu):
+
+        self.nu = nu
         self.generate_modes()
 
     def set_resolution(self, res):
@@ -288,13 +308,12 @@ class MagpieInterface:
         self.material_coefs[2].value = self.nu
 
         self.set_material(E * 1e9, rho * 1e3)
-        self.__set_label_string__()
 
     def generate_modes(self):
 
         self.Om, self.Q, self.N, self.biharm = magpie(self.rho, self.E, self.nu, self.ldim, self.h, self.BCs,
                                                       self.Nmodes)
-
+        self.__set_label_string__()
         for m in range(self.Nmodes):
             self.mode_shapes = [np.real(np.reshape(self.Q[:, m], [self.N['x'], self.N['y']])) for m in
                                 range(self.Nmodes)]
@@ -306,11 +325,11 @@ class MagpieInterface:
         """
         """
         m = self.m
-        ratio = self.ldim[1]/self.ldim[0]
+        ratio = self.ldim[1] / self.ldim[0]
         with self.chladni_plot:
             clear_output(wait=True)
 
-            fig = plt.figure(figsize=(4, 4*ratio))
+            fig = plt.figure(figsize=(4, 4 * ratio))
             ax = fig.add_subplot(111)
 
             Z = abs(self.mode_shapes[m])
@@ -334,7 +353,6 @@ class MagpieInterface:
         """
         x, y = np.mgrid[0:self.N['x'], 0:self.N['y']]
         return {'x': x.flatten().astype('int64'), 'y': y.flatten().astype('int64'), 'z': np.real(self.Q[:, self.m])}
-
 
     def show(self):
         display(self.interface)
