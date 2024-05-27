@@ -15,8 +15,13 @@ import ipywidgets
 from IPython.display import HTML, display
 import time
 
-from magpie.magpie.magpie import magpie
-
+# --------------------------------------------
+# Evil Import Hack while we transition to pypi
+try:
+    from magpie.magpie.magpie import magpie
+except ModuleNotFoundError:
+    from magpie import magpie
+# --------------------------------------------
 materials = pd.read_csv('magpie/magpie/data/material_properties.csv')
 
 
