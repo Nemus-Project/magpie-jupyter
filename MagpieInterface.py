@@ -22,7 +22,7 @@ try:
 except ModuleNotFoundError:
     from magpie import magpie
 # --------------------------------------------
-materials = pd.read_csv('magpie/magpie/data/material_properties.csv')
+materials = pd.read_csv('./data/material_properties.csv')
 
 
 class DownloadButton(Button):
